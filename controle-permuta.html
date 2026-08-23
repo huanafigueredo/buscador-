@@ -102,10 +102,15 @@
   }
   .saldo-quem b{ color:var(--white); }
 
-  .edit-saldo-btn{
+  .saldo-actions{
+    display:flex;
+    gap:8px;
+    margin-top:14px;
     position:relative;
     z-index:1;
-    margin-top:14px;
+  }
+
+  .edit-saldo-btn{
     background:rgba(255,255,255,0.12);
     color:var(--cream);
     border:1px solid rgba(255,255,255,0.3);
@@ -117,6 +122,43 @@
     cursor:pointer;
   }
   .edit-saldo-btn:active{ background:rgba(255,255,255,0.22); }
+
+  .detalhes-btn{
+    background:none;
+    border:1px solid transparent;
+    color:var(--cream);
+    text-decoration:underline;
+    font-family:'Inter';
+    font-size:0.75rem;
+    font-weight:600;
+    cursor:pointer;
+    padding:7px 4px;
+  }
+
+  .saldo-detalhes{
+    display:none;
+    margin-top:14px;
+    padding-top:14px;
+    border-top:1px solid rgba(255,255,255,0.2);
+    position:relative;
+    z-index:1;
+  }
+  .saldo-detalhes.open{ display:block; }
+  .detalhe-linha{
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    font-size:0.82rem;
+    padding:4px 0;
+    color:#D8CDB8;
+  }
+  .detalhe-linha b{ color:var(--white); font-weight:700; }
+  .detalhe-linha.total{
+    margin-top:6px;
+    padding-top:8px;
+    border-top:1px solid rgba(255,255,255,0.15);
+    font-size:0.88rem;
+  }
 
   .edit-saldo-card{
     display:none;
@@ -435,7 +477,17 @@
     <div class="saldo-label">Saldo atual em aberto</div>
     <div class="saldo-valor" id="saldoValor">—</div>
     <div class="saldo-quem" id="saldoQuem">carregando…</div>
-    <button class="edit-saldo-btn" onclick="abrirEdicaoSaldo()">✎ Editar saldo</button>
+    <div class="saldo-actions">
+      <button class="edit-saldo-btn" onclick="abrirEdicaoSaldo()">✎ Editar saldo</button>
+      <button class="detalhes-btn" id="detalhesBtn" onclick="toggleDetalhesSaldo()">Ver detalhes ▾</button>
+    </div>
+    <div class="saldo-detalhes" id="saldoDetalhes">
+      <div class="detalhe-linha"><span>Total trabalhos Huana</span><b id="detTrabalhosHuana">R$ 0,00</b></div>
+      <div class="detalhe-linha"><span>Total trabalhos Juliana</span><b id="detTrabalhosJuliana">R$ 0,00</b></div>
+      <div class="detalhe-linha"><span>Pagamentos Huana → Juliana</span><b id="detPagHuana">R$ 0,00</b></div>
+      <div class="detalhe-linha"><span>Pagamentos Juliana → Huana</span><b id="detPagJuliana">R$ 0,00</b></div>
+      <div class="detalhe-linha total"><span>Saldo atual</span><b id="detSaldo">R$ 0,00</b></div>
+    </div>
   </div>
 
   <div class="edit-saldo-card" id="editSaldoCard">
@@ -551,6 +603,44 @@ function setSyncStatus(online){
   if(!dot || !label) return;
   dot.classList.toggle('offline', !online);
   label.textContent = online ? 'sincronizado com o banco compartilhado' : 'offline — usando cópia local';
+}
+
+function toggleDetalhesSaldo(){
+  const painel = document.getElementById('saldoDetalhes');
+  const btn = document.getElementById('detalhesBtn');
+  const abrindo = !painel.classList.contains('open');
+  painel.classList.toggle('open', abrindo);
+  btn.textContent = abrindo ? 'Ocultar detalhes ▴' : 'Ver detalhes ▾';
+}
+
+function calcularTotais(){
+  const totais = { trabalhosHuana: 0, trabalhosJuliana: 0, pagHuana: 0, pagJuliana: 0 };
+  entries.forEach(e=>{
+    if(e.tipo === 'servico'){
+      if(e.quem === 'huana') totais.trabalhosHuana += e.valor;
+      if(e.quem === 'juliana') totais.trabalhosJuliana += e.valor;
+    } else if(e.tipo === 'pagamento'){
+      if(e.quem === 'huana') totais.pagHuana += e.valor;
+      if(e.quem === 'juliana') totais.pagJuliana += e.valor;
+    }
+  });
+  return totais;
+}
+
+function renderDetalhesSaldo(){
+  const t = calcularTotais();
+  document.getElementById('detTrabalhosHuana').textContent = 'R$ ' + fmt(t.trabalhosHuana);
+  document.getElementById('detTrabalhosJuliana').textContent = 'R$ ' + fmt(t.trabalhosJuliana);
+  document.getElementById('detPagHuana').textContent = 'R$ ' + fmt(t.pagHuana);
+  document.getElementById('detPagJuliana').textContent = 'R$ ' + fmt(t.pagJuliana);
+
+  const saldo = calcularSaldo();
+  const abs = Math.abs(saldo);
+  let saldoTexto;
+  if(abs < 0.01) saldoTexto = 'Tudo quitado';
+  else if(saldo > 0) saldoTexto = 'Huana deve R$ ' + fmt(abs);
+  else saldoTexto = 'Juliana deve R$ ' + fmt(abs);
+  document.getElementById('detSaldo').textContent = saldoTexto;
 }
 
 function abrirEdicaoSaldo(){
@@ -863,6 +953,8 @@ function render(){
   } else {
     quemEl.innerHTML = '<b>Juliana</b> deve para a Huana';
   }
+
+  renderDetalhesSaldo();
 
   if(document.getElementById('panel-historico').classList.contains('active')){
     renderHistorico();
