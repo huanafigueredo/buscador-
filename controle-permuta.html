@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Permuta — Huana & Juliana</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap');
+
+  :root{
+    --clay: #B5652F;
+    --clay-dark: #8C4A20;
+    --glaze: #5C7A6B;
+    --cream: #F7F2E9;
+    --cream-2: #EFE7D8;
+    --ink: #2B2420;
+    --ink-soft: #6B6055;
+    --line: #DDD2BE;
+    --white: #FFFDF9;
+    --debit: #A8432E;
+    --credit: #4A6E5A;
+  }
+
+  *{box-sizing:border-box; margin:0; padding:0;}
+
+  body{
+    font-family:'Inter', sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    padding: 24px 16px 60px;
+    min-height:100vh;
+  }
+
+  .wrap{ max-width:760px; margin:0 auto; }
+
+  header{
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:16px;
+    margin-bottom:28px;
+    border-bottom: 2px solid var(--ink);
+    padding-bottom:18px;
+  }
+
+  .kiln-mark{
+    width:34px; height:34px;
+    flex-shrink:0;
+  }
+
+  h1{
+    font-family:'Fraunces', serif;
+    font-weight:700;
+    font-size: 1.9rem;
+    letter-spacing:-0.01em;
+    line-height:1.05;
+  }
+  h1 span{ color:var(--clay); font-style:italic; font-weight:500; }
+
+  .subtitle{
+    font-size:0.8rem;
+    color:var(--ink-soft);
+    margin-top:4px;
+  }
+
+  /* Saldo */
+  .saldo-card{
+    background: var(--ink);
+    color: var(--cream);
+    border-radius: 4px;
+    padding: 22px 22px 20px;
+    margin-bottom: 22px;
+    position:relative;
+    overflow:hidden;
+  }
+  .saldo-card::before{
+    content:"";
+    position:absolute;
+    right:-30px; top:-30px;
+    width:140px; height:140px;
+    border-radius:50%;
+    background: radial-gradient(circle, rgba(181,101,47,0.35), transparent 70%);
+  }
+  .saldo-label{
+    font-size:0.7rem;
+    text-transform:uppercase;
+    letter-spacing:0.12em;
+    color: #C9BFA f;
+    color: #D8CDB8;
+    margin-bottom:6px;
+  }
+  .saldo-valor{
+    font-family:'Fraunces', serif;
+    font-weight:700;
+    font-size:2.6rem;
+    line-height:1;
+  }
+  .saldo-quem{
+    font-size:0.85rem;
+    margin-top:8px;
+    color:#D8CDB8;
+  }
+  .saldo-quem b{ color:var(--white); }
+
+  .edit-saldo-btn{
+    position:relative;
+    z-index:1;
+    margin-top:14px;
+    background:rgba(255,255,255,0.12);
+    color:var(--cream);
+    border:1px solid rgba(255,255,255,0.3);
+    border-radius:3px;
+    padding:7px 12px;
+    font-family:'Inter';
+    font-size:0.75rem;
+    font-weight:600;
+    cursor:pointer;
+  }
+  .edit-saldo-btn:active{ background:rgba(255,255,255,0.22); }
+
+  .edit-saldo-card{
+    display:none;
+    background: var(--white);
+    border:1.5px solid var(--ink);
+    border-radius:5px;
+    padding:18px;
+    margin-bottom:22px;
+  }
+  .edit-saldo-card.open{ display:block; }
+  .edit-saldo-card h2{
+    font-family:'Fraunces', serif;
+    font-size:1.05rem;
+    margin-bottom:12px;
+    font-weight:600;
+  }
+
+  /* Tabs */
+  .tabs{
+    display:flex;
+    gap:6px;
+    margin-bottom:16px;
+  }
+  .tab-btn{
+    flex:1;
+    padding:10px 6px;
+    border:1.5px solid var(--ink);
+    background:transparent;
+    font-family:'Inter';
+    font-weight:600;
+    font-size:0.82rem;
+    color:var(--ink);
+    border-radius:3px;
+    cursor:pointer;
+  }
+  .tab-btn.active{
+    background:var(--ink);
+    color:var(--cream);
+  }
+
+  section.panel{ display:none; }
+  section.panel.active{ display:block; }
+
+  /* Form de novo lançamento */
+  .form-card{
+    background: var(--white);
+    border:1px solid var(--line);
+    border-radius:5px;
+    padding:18px;
+    margin-bottom:22px;
+  }
+  .form-card h2{
+    font-family:'Fraunces', serif;
+    font-size:1.05rem;
+    margin-bottom:12px;
+    font-weight:600;
+  }
+  .field-row{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:10px;
+    margin-bottom:10px;
+  }
+  label{
+    display:block;
+    font-size:0.68rem;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--ink-soft);
+    margin-bottom:4px;
+  }
+  input, select, textarea{
+    width:100%;
+    font-family:'Inter';
+    font-size:0.92rem;
+    padding:9px 10px;
+    border:1px solid var(--line);
+    border-radius:3px;
+    background:var(--cream);
+    color:var(--ink);
+  }
+  textarea{ resize:vertical; min-height:44px; }
+  input:focus, select:focus, textarea:focus{
+    outline:none;
+    border-color:var(--clay);
+  }
+
+  .quem-toggle{
+    display:flex; gap:8px; margin-bottom:10px;
+  }
+  .quem-opt{
+    flex:1;
+    padding:9px;
+    text-align:center;
+    border:1.5px solid var(--line);
+    border-radius:3px;
+    font-size:0.82rem;
+    font-weight:600;
+    cursor:pointer;
+    color:var(--ink-soft);
+  }
+  .quem-opt.sel-huana{ border-color:var(--clay); color:var(--clay-dark); background:#FBEFE4; }
+  .quem-opt.sel-juliana{ border-color:var(--glaze); color:var(--glaze); background:#EAF0EC; }
+
+  .btn-add{
+    width:100%;
+    padding:11px;
+    background:var(--clay);
+    color:#fff;
+    border:none;
+    border-radius:3px;
+    font-family:'Inter';
+    font-weight:700;
+    font-size:0.88rem;
+    cursor:pointer;
+    margin-top:4px;
+  }
+  .btn-add:active{ background:var(--clay-dark); }
+
+  .btn-pagamento{
+    background:var(--glaze);
+  }
+  .btn-pagamento:active{ background:#3f5c4f; }
+
+  /* Lista de lançamentos */
+  .entry{
+    background:var(--white);
+    border:1px solid var(--line);
+    border-left:4px solid var(--clay);
+    border-radius:3px;
+    padding:12px 14px;
+    margin-bottom:8px;
+  }
+  .entry.juliana{ border-left-color: var(--glaze); }
+  .entry.pagamento{ border-left-color: var(--ink); border-style:dashed; }
+
+  .entry-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:10px;
+  }
+  .entry-desc{
+    font-size:0.92rem;
+    font-weight:600;
+    line-height:1.3;
+  }
+  .entry-meta{
+    font-size:0.72rem;
+    color:var(--ink-soft);
+    margin-top:3px;
+  }
+  .entry-valor{
+    font-family:'Fraunces', serif;
+    font-weight:700;
+    font-size:1.05rem;
+    white-space:nowrap;
+  }
+  .entry-valor.debit{ color:var(--debit); }
+  .entry-valor.credit{ color:var(--credit); }
+
+  .entry-del{
+    background:none;
+    border:none;
+    color:var(--ink-soft);
+    font-size:0.68rem;
+    text-decoration:underline;
+    cursor:pointer;
+    margin-top:6px;
+    padding:0;
+  }
+
+  .empty-state{
+    text-align:center;
+    padding:30px 16px;
+    color:var(--ink-soft);
+    font-size:0.85rem;
+  }
+
+  .section-label{
+    font-size:0.72rem;
+    text-transform:uppercase;
+    letter-spacing:0.1em;
+    color:var(--ink-soft);
+    margin: 18px 0 8px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .section-label::after{
+    content:"";
+    flex:1;
+    height:1px;
+    background:var(--line);
+  }
+
+  .loading, .err{
+    text-align:center;
+    padding:30px;
+    color:var(--ink-soft);
+    font-size:0.85rem;
+  }
+  .err{ color: var(--debit); }
+
+  .storage-warning{
+    display:none;
+    background:#F7E3DC;
+    border:1px solid var(--debit);
+    color:var(--debit);
+    border-radius:4px;
+    padding:10px 12px;
+    font-size:0.78rem;
+    margin-bottom:18px;
+  }
+  .storage-warning.show{ display:block; }
+
+  footer{
+    text-align:center;
+    margin-top:30px;
+    font-size:0.68rem;
+    color:var(--ink-soft);
+  }
+  .reset-btn{
+    background:none;
+    border:none;
+    color:var(--debit);
+    text-decoration:underline;
+    font-size:0.68rem;
+    cursor:pointer;
+    margin-top:8px;
+    padding:0;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <h1>Controle de <span>permuta</span></h1>
+      <div class="subtitle">Huana (fotografia/vídeo) &amp; Juliana (cerâmica)</div>
+    </div>
+    <svg class="kiln-mark" viewBox="0 0 40 40" fill="none">
+      <path d="M8 32 L8 14 Q8 8 14 8 L26 8 Q32 8 32 14 L32 32" stroke="#2B2420" stroke-width="2"/>
+      <line x1="4" y1="32" x2="36" y2="32" stroke="#2B2420" stroke-width="2"/>
+      <circle cx="20" cy="19" r="4" fill="#B5652F"/>
+    </svg>
+  </header>
+
+  <div id="storageWarning" class="storage-warning">
+    Não foi possível salvar os dados neste navegador (armazenamento local indisponível ou cheio). As alterações podem ser perdidas ao recarregar a página.
+  </div>
+
+  <div id="saldoBox" class="saldo-card">
+    <div class="saldo-label">Saldo atual em aberto</div>
+    <div class="saldo-valor" id="saldoValor">—</div>
+    <div class="saldo-quem" id="saldoQuem">carregando…</div>
+    <button class="edit-saldo-btn" onclick="abrirEdicaoSaldo()">✎ Editar saldo</button>
+  </div>
+
+  <div class="edit-saldo-card" id="editSaldoCard">
+    <h2>Ajustar saldo manualmente</h2>
+    <div class="quem-toggle">
+      <div class="quem-opt sel-huana" id="eqh" onclick="setQuemSaldo('huana')">Huana deve</div>
+      <div class="quem-opt" id="eqj" onclick="setQuemSaldo('juliana')">Juliana deve</div>
+    </div>
+    <label>Novo valor do saldo (R$)</label>
+    <input type="number" id="novoSaldoValor" step="0.01" placeholder="0,00">
+    <label style="margin-top:10px;">Observação (opcional)</label>
+    <textarea id="obsSaldo" placeholder="Ex: acerto conforme conversa do dia 22/08"></textarea>
+    <div style="display:flex; gap:8px; margin-top:12px;">
+      <button class="btn-add" style="background:var(--ink);" onclick="fecharEdicaoSaldo()">Cancelar</button>
+      <button class="btn-add" onclick="salvarAjusteSaldo()">Salvar ajuste</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="lancar">+ Lançar</button>
+    <button class="tab-btn" data-tab="historico">Histórico</button>
+  </div>
+
+  <!-- PAINEL: LANÇAR -->
+  <section class="panel active" id="panel-lancar">
+
+    <div class="form-card">
+      <h2>Trabalho / serviço feito</h2>
+      <div class="quem-toggle">
+        <div class="quem-opt sel-huana" id="qh" onclick="setQuem('huana')">Huana fez</div>
+        <div class="quem-opt" id="qj" onclick="setQuem('juliana')">Juliana fez</div>
+      </div>
+      <div class="field-row">
+        <div>
+          <label>Data</label>
+          <input type="date" id="dataServico">
+        </div>
+        <div>
+          <label>Valor (R$)</label>
+          <input type="number" id="valorServico" step="0.01" placeholder="0,00">
+        </div>
+      </div>
+      <label>Descrição do que foi feito</label>
+      <textarea id="descServico" placeholder="Ex: Fotografia do workshop de julho"></textarea>
+      <button class="btn-add" onclick="addServico()">Adicionar trabalho</button>
+    </div>
+
+    <div class="form-card">
+      <h2>Registrar pagamento</h2>
+      <div class="field-row">
+        <div>
+          <label>Data do pagamento</label>
+          <input type="date" id="dataPag">
+        </div>
+        <div>
+          <label>Valor pago (R$)</label>
+          <input type="number" id="valorPag" step="0.01" placeholder="0,00">
+        </div>
+      </div>
+      <label>Quem pagou</label>
+      <select id="quemPagou">
+        <option value="huana">Huana pagou a Juliana</option>
+        <option value="juliana">Juliana pagou a Huana</option>
+      </select>
+      <button class="btn-add btn-pagamento" onclick="addPagamento()">Registrar pagamento</button>
+    </div>
+
+  </section>
+
+  <!-- PAINEL: HISTÓRICO -->
+  <section class="panel" id="panel-historico">
+    <div id="historicoList">
+      <div class="loading">carregando histórico…</div>
+    </div>
+  </section>
+
+  <footer>
+    Os dados ficam salvos neste dispositivo/navegador. Edite livremente conforme as trocas forem acontecendo.
+    <br><button class="reset-btn" onclick="resetarDados()">Zerar todos os dados</button>
+  </footer>
+</div>
+
+<script>
+let entries = [];
+let quemSel = 'huana';
+const STORAGE_KEY = 'permuta-entries';
+let quemSaldoSel = 'huana';
+
+function abrirEdicaoSaldo(){
+  document.getElementById('editSaldoCard').classList.add('open');
+  const saldoAtual = calcularSaldo();
+  document.getElementById('novoSaldoValor').value = Math.abs(saldoAtual).toFixed(2);
+  setQuemSaldo(saldoAtual >= 0 ? 'huana' : 'juliana');
+  document.getElementById('editSaldoCard').scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+function fecharEdicaoSaldo(){
+  document.getElementById('editSaldoCard').classList.remove('open');
+}
+
+function setQuemSaldo(v){
+  quemSaldoSel = v;
+  document.getElementById('eqh').className = 'quem-opt' + (v==='huana' ? ' sel-huana' : '');
+  document.getElementById('eqj').className = 'quem-opt' + (v==='juliana' ? ' sel-juliana' : '');
+}
+
+function salvarAjusteSaldo(){
+  const novoValorAbs = parseFloat(document.getElementById('novoSaldoValor').value);
+  const obs = document.getElementById('obsSaldo').value.trim();
+
+  if(isNaN(novoValorAbs) || novoValorAbs < 0){
+    alert('Informe um valor válido.');
+    return;
+  }
+
+  // saldo desejado, no formato positivo=Huana deve, negativo=Juliana deve
+  const saldoDesejado = quemSaldoSel === 'huana' ? novoValorAbs : -novoValorAbs;
+  const saldoAtual = calcularSaldo();
+  const diferenca = saldoDesejado - saldoAtual;
+
+  if(Math.abs(diferenca) < 0.005){
+    fecharEdicaoSaldo();
+    return;
+  }
+
+  // Um ajuste positivo (diferenca>0) aumenta o quanto Huana deve -> registrado como 'servico' de huana
+  // Um ajuste negativo diminui o quanto Huana deve -> registrado como 'servico' de juliana
+  entries.push({
+    id: Date.now(),
+    tipo: 'servico',
+    quem: diferenca > 0 ? 'huana' : 'juliana',
+    data: new Date().toISOString().slice(0,10),
+    valor: Math.abs(diferenca),
+    desc: 'Ajuste manual de saldo' + (obs ? ' — ' + obs : '')
+  });
+
+  document.getElementById('obsSaldo').value = '';
+  fecharEdicaoSaldo();
+  saveEntries();
+  render();
+}
+
+function setQuem(v){
+  quemSel = v;
+  document.getElementById('qh').className = 'quem-opt' + (v==='huana' ? ' sel-huana' : '');
+  document.getElementById('qj').className = 'quem-opt' + (v==='juliana' ? ' sel-juliana' : '');
+}
+
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
+    if(btn.dataset.tab === 'historico') renderHistorico();
+  });
+});
+
+const SEED_ENTRIES = [
+  {
+    id: 1718668800000,
+    tipo: 'servico',
+    quem: 'huana',
+    data: '2026-06-01',
+    valor: 100.00,
+    desc: 'Vídeo — Ghost: Workshop Dia dos Namorados'
+  },
+  {
+    id: 1718668800001,
+    tipo: 'servico',
+    quem: 'huana',
+    data: '2026-06-01',
+    valor: 100.00,
+    desc: 'Vídeo — Ju no torno'
+  }
+];
+
+function mostrarAvisoStorage(mostrar){
+  document.getElementById('storageWarning').classList.toggle('show', mostrar);
+}
+
+function loadEntries(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      entries = JSON.parse(raw);
+    } else {
+      // primeira vez abrindo: já entra com o saldo de R$ 125,70 em aberto (18/06)
+      entries = SEED_ENTRIES;
+      saveEntries();
+    }
+  }catch(e){
+    console.error('Erro ao carregar dados salvos', e);
+    entries = SEED_ENTRIES;
+    mostrarAvisoStorage(true);
+  }
+  render();
+}
+
+function saveEntries(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+    mostrarAvisoStorage(false);
+  }catch(e){
+    console.error('Erro ao salvar dados', e);
+    mostrarAvisoStorage(true);
+    alert('Não foi possível salvar os dados neste navegador (pode ser modo privado ou armazenamento cheio). Suas alterações estão visíveis nesta sessão, mas podem se perder ao recarregar a página.');
+  }
+}
+
+function fmt(v){
+  return v.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function fmtDate(d){
+  if(!d) return '';
+  const [y,m,day] = d.split('-');
+  return `${day}/${m}/${y}`;
+}
+
+function addServico(){
+  const data = document.getElementById('dataServico').value;
+  const valor = parseFloat(document.getElementById('valorServico').value);
+  const desc = document.getElementById('descServico').value.trim();
+
+  if(!valor || valor<=0 || !desc){
+    alert('Preencha a descrição e um valor válido.');
+    return;
+  }
+
+  entries.push({
+    id: Date.now(),
+    tipo: 'servico',
+    quem: quemSel,
+    data: data || new Date().toISOString().slice(0,10),
+    valor: valor,
+    desc: desc
+  });
+
+  document.getElementById('valorServico').value='';
+  document.getElementById('descServico').value='';
+  saveEntries();
+  render();
+  alert('Trabalho adicionado!');
+}
+
+function addPagamento(){
+  const data = document.getElementById('dataPag').value;
+  const valor = parseFloat(document.getElementById('valorPag').value);
+  const quem = document.getElementById('quemPagou').value;
+
+  if(!valor || valor<=0){
+    alert('Informe um valor de pagamento válido.');
+    return;
+  }
+
+  entries.push({
+    id: Date.now(),
+    tipo: 'pagamento',
+    quem: quem,
+    data: data || new Date().toISOString().slice(0,10),
+    valor: valor,
+    desc: quem === 'huana' ? 'Pagamento de Huana para Juliana' : 'Pagamento de Juliana para Huana'
+  });
+
+  document.getElementById('valorPag').value='';
+  saveEntries();
+  render();
+  alert('Pagamento registrado!');
+}
+
+function resetarDados(){
+  if(!confirm('Isso vai apagar TODO o histórico de trabalhos e pagamentos. Tem certeza?')) return;
+  entries = [];
+  saveEntries();
+  render();
+  alert('Dados zerados. Use "Editar saldo" para definir o saldo correto atual.');
+}
+
+function removeEntry(id){
+  if(!confirm('Remover este lançamento?')) return;
+  entries = entries.filter(e=>e.id !== id);
+  saveEntries();
+  render();
+}
+
+function calcularSaldo(){
+  // Positivo = Huana deve para Juliana. Negativo = Juliana deve para Huana.
+  let saldo = 0;
+  entries.forEach(e=>{
+    if(e.tipo === 'servico'){
+      if(e.quem === 'huana') saldo += e.valor;   // trabalho da Huana = Huana deve mais (ela "gastou" o serviço de cerâmica em troca)
+      if(e.quem === 'juliana') saldo -= e.valor; // trabalho da Juliana = Juliana deve mais
+    } else if(e.tipo === 'pagamento'){
+      if(e.quem === 'huana') saldo -= e.valor;    // Huana pagou = reduz o que Huana deve
+      if(e.quem === 'juliana') saldo += e.valor;  // Juliana pagou = reduz o que Juliana deve
+    }
+  });
+  return saldo;
+}
+
+function render(){
+  const saldo = calcularSaldo();
+  const abs = Math.abs(saldo);
+  document.getElementById('saldoValor').textContent = 'R$ ' + fmt(abs);
+
+  const quemEl = document.getElementById('saldoQuem');
+  if(abs < 0.01){
+    quemEl.innerHTML = '<b>Tudo quitado</b> — nenhum saldo pendente';
+  } else if(saldo > 0){
+    quemEl.innerHTML = '<b>Huana</b> deve para a Juliana';
+  } else {
+    quemEl.innerHTML = '<b>Juliana</b> deve para a Huana';
+  }
+
+  if(document.getElementById('panel-historico').classList.contains('active')){
+    renderHistorico();
+  }
+}
+
+function renderHistorico(){
+  const list = document.getElementById('historicoList');
+  if(entries.length === 0){
+    list.innerHTML = '<div class="empty-state">Nenhum lançamento ainda.<br>Adicione o primeiro trabalho ou pagamento na aba "Lançar".</div>';
+    return;
+  }
+
+  const sorted = [...entries].sort((a,b)=> new Date(b.data) - new Date(a.data));
+
+  let html = '<div class="section-label">Todos os lançamentos</div>';
+  sorted.forEach(e=>{
+    const isServico = e.tipo === 'servico';
+    const cls = e.quem === 'juliana' ? 'juliana' : (isServico ? '' : 'pagamento');
+    const quemLabel = isServico
+      ? (e.quem === 'huana' ? 'Trabalho de Huana' : 'Trabalho de Juliana')
+      : (e.quem === 'huana' ? 'Pagamento: Huana → Juliana' : 'Pagamento: Juliana → Huana');
+
+    const valorClass = isServico
+      ? (e.quem === 'huana' ? 'credit' : 'debit')
+      : 'credit';
+
+    html += `
+      <div class="entry ${cls}">
+        <div class="entry-top">
+          <div>
+            <div class="entry-desc">${e.desc}</div>
+            <div class="entry-meta">${quemLabel} · ${fmtDate(e.data)}</div>
+          </div>
+          <div class="entry-valor ${valorClass}">R$ ${fmt(e.valor)}</div>
+        </div>
+        <button class="entry-del" onclick="removeEntry(${e.id})">remover</button>
+      </div>
+    `;
+  });
+
+  list.innerHTML = html;
+}
+
+// init
+document.getElementById('dataServico').valueAsDate = new Date();
+document.getElementById('dataPag').valueAsDate = new Date();
+loadEntries();
+</script>
+</body>
+</html>
