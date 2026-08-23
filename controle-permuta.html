@@ -63,102 +63,94 @@
     margin-top:4px;
   }
 
-  /* Saldo */
-  .saldo-card{
-    background: var(--ink);
-    color: var(--cream);
-    border-radius: 4px;
-    padding: 22px 22px 20px;
+  /* Saldo — blocos por pessoa */
+  .saldo-resumo{
     margin-bottom: 22px;
-    position:relative;
-    overflow:hidden;
   }
-  .saldo-card::before{
-    content:"";
-    position:absolute;
-    right:-30px; top:-30px;
-    width:140px; height:140px;
+
+  .pessoa-card{
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-top: 4px solid var(--clay);
+    border-radius: 5px;
+    padding: 16px;
+    margin-bottom: 10px;
+  }
+  .pessoa-card.juliana{ border-top-color: var(--glaze); }
+
+  .pessoa-header{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:10px;
+  }
+  .pessoa-avatar{
+    width:36px;
+    height:36px;
     border-radius:50%;
-    background: radial-gradient(circle, rgba(181,101,47,0.35), transparent 70%);
-  }
-  .saldo-label{
-    font-size:0.7rem;
-    text-transform:uppercase;
-    letter-spacing:0.12em;
-    color: #C9BFA f;
-    color: #D8CDB8;
-    margin-bottom:6px;
-  }
-  .saldo-valor{
+    display:flex;
+    align-items:center;
+    justify-content:center;
     font-family:'Fraunces', serif;
     font-weight:700;
-    font-size:2.6rem;
-    line-height:1;
+    color:#fff;
+    background:var(--clay);
+    flex-shrink:0;
   }
-  .saldo-quem{
-    font-size:0.85rem;
-    margin-top:8px;
-    color:#D8CDB8;
-  }
-  .saldo-quem b{ color:var(--white); }
-
-  .saldo-actions{
-    display:flex;
-    gap:8px;
-    margin-top:14px;
-    position:relative;
-    z-index:1;
+  .pessoa-card.juliana .pessoa-avatar{ background:var(--glaze); }
+  .pessoa-nome{
+    font-family:'Fraunces', serif;
+    font-weight:700;
+    font-size:1.05rem;
   }
 
-  .edit-saldo-btn{
-    background:rgba(255,255,255,0.12);
-    color:var(--cream);
-    border:1px solid rgba(255,255,255,0.3);
-    border-radius:3px;
-    padding:7px 12px;
-    font-family:'Inter';
-    font-size:0.75rem;
-    font-weight:600;
-    cursor:pointer;
-  }
-  .edit-saldo-btn:active{ background:rgba(255,255,255,0.22); }
-
-  .detalhes-btn{
-    background:none;
-    border:1px solid transparent;
-    color:var(--cream);
-    text-decoration:underline;
-    font-family:'Inter';
-    font-size:0.75rem;
-    font-weight:600;
-    cursor:pointer;
-    padding:7px 4px;
-  }
-
-  .saldo-detalhes{
-    display:none;
-    margin-top:14px;
-    padding-top:14px;
-    border-top:1px solid rgba(255,255,255,0.2);
-    position:relative;
-    z-index:1;
-  }
-  .saldo-detalhes.open{ display:block; }
-  .detalhe-linha{
+  .pessoa-linha{
     display:flex;
     justify-content:space-between;
     gap:10px;
-    font-size:0.82rem;
+    font-size:0.85rem;
     padding:4px 0;
+    color:var(--ink-soft);
+  }
+  .pessoa-linha b{ color:var(--ink); font-weight:700; }
+
+  .saldo-final{
+    background: var(--ink);
+    color: var(--cream);
+    border-radius: 4px;
+    padding: 16px 18px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    margin-bottom:10px;
+  }
+  .saldo-final-label{
+    font-size:0.7rem;
+    text-transform:uppercase;
+    letter-spacing:0.12em;
     color:#D8CDB8;
   }
-  .detalhe-linha b{ color:var(--white); font-weight:700; }
-  .detalhe-linha.total{
-    margin-top:6px;
-    padding-top:8px;
-    border-top:1px solid rgba(255,255,255,0.15);
-    font-size:0.88rem;
+  .saldo-final-valor{
+    font-family:'Fraunces', serif;
+    font-weight:700;
+    font-size:1.15rem;
+    text-align:right;
   }
+
+  .edit-saldo-btn{
+    width:100%;
+    background:var(--white);
+    color:var(--ink);
+    border:1.5px solid var(--ink);
+    border-radius:3px;
+    padding:9px 12px;
+    font-family:'Inter';
+    font-size:0.8rem;
+    font-weight:600;
+    cursor:pointer;
+  }
+  .edit-saldo-btn:active{ background:var(--cream-2); }
 
   .edit-saldo-card{
     display:none;
@@ -473,21 +465,28 @@
     Não foi possível sincronizar com o banco compartilhado agora. Mostrando a última cópia salva neste navegador — os dados podem estar desatualizados até a conexão voltar.
   </div>
 
-  <div id="saldoBox" class="saldo-card">
-    <div class="saldo-label">Saldo atual em aberto</div>
-    <div class="saldo-valor" id="saldoValor">—</div>
-    <div class="saldo-quem" id="saldoQuem">carregando…</div>
-    <div class="saldo-actions">
-      <button class="edit-saldo-btn" onclick="abrirEdicaoSaldo()">✎ Editar saldo</button>
-      <button class="detalhes-btn" id="detalhesBtn" onclick="toggleDetalhesSaldo()">Ver detalhes ▾</button>
+  <div id="saldoBox" class="saldo-resumo">
+    <div class="pessoa-card huana">
+      <div class="pessoa-header">
+        <div class="pessoa-avatar">H</div>
+        <div class="pessoa-nome">Huana</div>
+      </div>
+      <div class="pessoa-linha"><span>Total trabalhado</span><b id="totHuanaTrabalho">R$ 0,00</b></div>
+      <div class="pessoa-linha"><span>Total pago</span><b id="totHuanaPago">R$ 0,00</b></div>
     </div>
-    <div class="saldo-detalhes" id="saldoDetalhes">
-      <div class="detalhe-linha"><span>Total trabalhos Huana</span><b id="detTrabalhosHuana">R$ 0,00</b></div>
-      <div class="detalhe-linha"><span>Total trabalhos Juliana</span><b id="detTrabalhosJuliana">R$ 0,00</b></div>
-      <div class="detalhe-linha"><span>Pagamentos Huana → Juliana</span><b id="detPagHuana">R$ 0,00</b></div>
-      <div class="detalhe-linha"><span>Pagamentos Juliana → Huana</span><b id="detPagJuliana">R$ 0,00</b></div>
-      <div class="detalhe-linha total"><span>Saldo atual</span><b id="detSaldo">R$ 0,00</b></div>
+    <div class="pessoa-card juliana">
+      <div class="pessoa-header">
+        <div class="pessoa-avatar">J</div>
+        <div class="pessoa-nome">Juliana</div>
+      </div>
+      <div class="pessoa-linha"><span>Total trabalhado</span><b id="totJulianaTrabalho">R$ 0,00</b></div>
+      <div class="pessoa-linha"><span>Total pago</span><b id="totJulianaPago">R$ 0,00</b></div>
     </div>
+    <div class="saldo-final">
+      <span class="saldo-final-label">Saldo atual</span>
+      <span class="saldo-final-valor" id="saldoFinalTexto">—</span>
+    </div>
+    <button class="edit-saldo-btn" onclick="abrirEdicaoSaldo()">✎ Editar saldo</button>
   </div>
 
   <div class="edit-saldo-card" id="editSaldoCard">
@@ -605,14 +604,6 @@ function setSyncStatus(online){
   label.textContent = online ? 'sincronizado com o banco compartilhado' : 'offline — usando cópia local';
 }
 
-function toggleDetalhesSaldo(){
-  const painel = document.getElementById('saldoDetalhes');
-  const btn = document.getElementById('detalhesBtn');
-  const abrindo = !painel.classList.contains('open');
-  painel.classList.toggle('open', abrindo);
-  btn.textContent = abrindo ? 'Ocultar detalhes ▴' : 'Ver detalhes ▾';
-}
-
 function calcularTotais(){
   const totais = { trabalhosHuana: 0, trabalhosJuliana: 0, pagHuana: 0, pagJuliana: 0 };
   entries.forEach(e=>{
@@ -627,12 +618,12 @@ function calcularTotais(){
   return totais;
 }
 
-function renderDetalhesSaldo(){
+function renderResumoPessoas(){
   const t = calcularTotais();
-  document.getElementById('detTrabalhosHuana').textContent = 'R$ ' + fmt(t.trabalhosHuana);
-  document.getElementById('detTrabalhosJuliana').textContent = 'R$ ' + fmt(t.trabalhosJuliana);
-  document.getElementById('detPagHuana').textContent = 'R$ ' + fmt(t.pagHuana);
-  document.getElementById('detPagJuliana').textContent = 'R$ ' + fmt(t.pagJuliana);
+  document.getElementById('totHuanaTrabalho').textContent = 'R$ ' + fmt(t.trabalhosHuana);
+  document.getElementById('totHuanaPago').textContent = 'R$ ' + fmt(t.pagHuana);
+  document.getElementById('totJulianaTrabalho').textContent = 'R$ ' + fmt(t.trabalhosJuliana);
+  document.getElementById('totJulianaPago').textContent = 'R$ ' + fmt(t.pagJuliana);
 
   const saldo = calcularSaldo();
   const abs = Math.abs(saldo);
@@ -640,7 +631,7 @@ function renderDetalhesSaldo(){
   if(abs < 0.01) saldoTexto = 'Tudo quitado';
   else if(saldo > 0) saldoTexto = 'Huana deve R$ ' + fmt(abs);
   else saldoTexto = 'Juliana deve R$ ' + fmt(abs);
-  document.getElementById('detSaldo').textContent = saldoTexto;
+  document.getElementById('saldoFinalTexto').textContent = saldoTexto;
 }
 
 function abrirEdicaoSaldo(){
@@ -941,20 +932,7 @@ function calcularSaldo(){
 }
 
 function render(){
-  const saldo = calcularSaldo();
-  const abs = Math.abs(saldo);
-  document.getElementById('saldoValor').textContent = 'R$ ' + fmt(abs);
-
-  const quemEl = document.getElementById('saldoQuem');
-  if(abs < 0.01){
-    quemEl.innerHTML = '<b>Tudo quitado</b> — nenhum saldo pendente';
-  } else if(saldo > 0){
-    quemEl.innerHTML = '<b>Huana</b> deve para a Juliana';
-  } else {
-    quemEl.innerHTML = '<b>Juliana</b> deve para a Huana';
-  }
-
-  renderDetalhesSaldo();
+  renderResumoPessoas();
 
   if(document.getElementById('panel-historico').classList.contains('active')){
     renderHistorico();
