@@ -680,12 +680,12 @@ async function salvarAjusteSaldo(){
     return;
   }
 
-  // Um ajuste positivo (diferenca>0) aumenta o quanto Huana deve -> registrado como 'servico' de huana
-  // Um ajuste negativo diminui o quanto Huana deve -> registrado como 'servico' de juliana
+  // Um ajuste positivo (diferenca>0) aumenta o quanto Huana deve -> registrado como 'servico' de juliana
+  // Um ajuste negativo diminui o quanto Huana deve -> registrado como 'servico' de huana
   const entry = {
     id: Date.now(),
     tipo: 'servico',
-    quem: diferenca > 0 ? 'huana' : 'juliana',
+    quem: diferenca > 0 ? 'juliana' : 'huana',
     data: new Date().toISOString().slice(0,10),
     valor: Math.abs(diferenca),
     desc: 'Ajuste manual de saldo' + (obs ? ' — ' + obs : '')
@@ -930,8 +930,8 @@ function calcularSaldo(){
   let saldo = 0;
   entries.forEach(e=>{
     if(e.tipo === 'servico'){
-      if(e.quem === 'huana') saldo += e.valor;   // trabalho da Huana = Huana deve mais (ela "gastou" o serviço de cerâmica em troca)
-      if(e.quem === 'juliana') saldo -= e.valor; // trabalho da Juliana = Juliana deve mais
+      if(e.quem === 'huana') saldo -= e.valor;   // trabalho da Huana = ela "pagou" com serviço, reduz o que ela deve (ou aumenta o que Juliana deve)
+      if(e.quem === 'juliana') saldo += e.valor; // trabalho da Juliana = ela "pagou" com serviço, aumenta o que Huana deve
     } else if(e.tipo === 'pagamento'){
       if(e.quem === 'huana') saldo -= e.valor;    // Huana pagou = reduz o que Huana deve
       if(e.quem === 'juliana') saldo += e.valor;  // Juliana pagou = reduz o que Juliana deve
