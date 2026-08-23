@@ -242,6 +242,29 @@
   .btn-pagamento:active{ background:#3f5c4f; }
 
   /* Lista de lançamentos */
+  .hist-filters{
+    display:flex;
+    gap:6px;
+    flex-wrap:wrap;
+    margin-bottom:14px;
+  }
+  .hist-filter-btn{
+    padding:6px 12px;
+    border:1.5px solid var(--line);
+    background:var(--white);
+    color:var(--ink-soft);
+    font-family:'Inter';
+    font-weight:600;
+    font-size:0.72rem;
+    border-radius:20px;
+    cursor:pointer;
+  }
+  .hist-filter-btn.active{
+    background:var(--ink);
+    border-color:var(--ink);
+    color:var(--cream);
+  }
+
   .entry{
     background:var(--white);
     border:1px solid var(--line);
@@ -259,6 +282,29 @@
     align-items:flex-start;
     gap:10px;
   }
+  .entry-main{
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+    min-width:0;
+  }
+  .entry-avatar{
+    width:32px;
+    height:32px;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:'Fraunces', serif;
+    font-weight:700;
+    font-size:0.88rem;
+    color:#fff;
+    flex-shrink:0;
+  }
+  .entry-avatar.huana{ background:var(--clay); }
+  .entry-avatar.juliana{ background:var(--glaze); }
+  .entry-avatar.pagamento-huana{ background:var(--clay); border:2px solid var(--ink); }
+  .entry-avatar.pagamento-juliana{ background:var(--glaze); border:2px solid var(--ink); }
   .entry-desc{
     font-size:0.92rem;
     font-weight:600;
@@ -461,6 +507,12 @@
 
   <!-- PAINEL: HISTÓRICO -->
   <section class="panel" id="panel-historico">
+    <div class="hist-filters">
+      <button class="hist-filter-btn active" data-filtro="todos" onclick="setFiltroHistorico('todos')">Todos</button>
+      <button class="hist-filter-btn" data-filtro="huana" onclick="setFiltroHistorico('huana')">Trabalhos da Huana</button>
+      <button class="hist-filter-btn" data-filtro="juliana" onclick="setFiltroHistorico('juliana')">Trabalhos da Juliana</button>
+      <button class="hist-filter-btn" data-filtro="pagamento" onclick="setFiltroHistorico('pagamento')">Pagamentos</button>
+    </div>
     <div id="historicoList">
       <div class="loading">carregando histórico…</div>
     </div>
@@ -483,6 +535,15 @@ let entries = [];
 let quemSel = 'huana';
 const STORAGE_KEY = 'permuta-entries-cache';
 let quemSaldoSel = 'huana';
+let filtroHistorico = 'todos';
+
+function setFiltroHistorico(f){
+  filtroHistorico = f;
+  document.querySelectorAll('.hist-filter-btn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.filtro === f);
+  });
+  renderHistorico();
+}
 
 function setSyncStatus(online){
   const dot = document.getElementById('syncDot');
@@ -810,6 +871,7 @@ function render(){
 
 function renderHistorico(){
   const list = document.getElementById('historicoList');
+
   if(entries.length === 0){
     list.innerHTML = '<div class="empty-state">Nenhum lançamento ainda.<br>Adicione o primeiro trabalho ou pagamento na aba "Lançar".</div>';
     return;
@@ -817,8 +879,28 @@ function renderHistorico(){
 
   const sorted = [...entries].sort((a,b)=> new Date(b.data) - new Date(a.data));
 
-  let html = '<div class="section-label">Todos os lançamentos</div>';
-  sorted.forEach(e=>{
+  const filtered = sorted.filter(e=>{
+    if(filtroHistorico === 'todos') return true;
+    if(filtroHistorico === 'pagamento') return e.tipo === 'pagamento';
+    if(filtroHistorico === 'huana') return e.tipo === 'servico' && e.quem === 'huana';
+    if(filtroHistorico === 'juliana') return e.tipo === 'servico' && e.quem === 'juliana';
+    return true;
+  });
+
+  if(filtered.length === 0){
+    list.innerHTML = '<div class="empty-state">Nenhum lançamento nesse filtro ainda.</div>';
+    return;
+  }
+
+  const labelSecao = {
+    todos: 'Todos os lançamentos',
+    huana: 'Trabalhos da Huana',
+    juliana: 'Trabalhos da Juliana',
+    pagamento: 'Pagamentos'
+  }[filtroHistorico];
+
+  let html = `<div class="section-label">${labelSecao}</div>`;
+  filtered.forEach(e=>{
     const isServico = e.tipo === 'servico';
     const cls = e.quem === 'juliana' ? 'juliana' : (isServico ? '' : 'pagamento');
     const quemLabel = isServico
@@ -829,12 +911,20 @@ function renderHistorico(){
       ? (e.quem === 'huana' ? 'credit' : 'debit')
       : 'credit';
 
+    const avatarLetra = isServico ? (e.quem === 'huana' ? 'H' : 'J') : '$';
+    const avatarClass = isServico
+      ? (e.quem === 'huana' ? 'huana' : 'juliana')
+      : (e.quem === 'huana' ? 'pagamento-huana' : 'pagamento-juliana');
+
     html += `
       <div class="entry ${cls}">
         <div class="entry-top">
-          <div>
-            <div class="entry-desc">${e.desc}</div>
-            <div class="entry-meta">${quemLabel} · ${fmtDate(e.data)}</div>
+          <div class="entry-main">
+            <div class="entry-avatar ${avatarClass}">${avatarLetra}</div>
+            <div>
+              <div class="entry-desc">${e.desc}</div>
+              <div class="entry-meta">${quemLabel} · ${fmtDate(e.data)}</div>
+            </div>
           </div>
           <div class="entry-valor ${valorClass}">R$ ${fmt(e.valor)}</div>
         </div>
