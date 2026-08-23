@@ -333,6 +333,21 @@
   }
   .storage-warning.show{ display:block; }
 
+  .sync-badge{
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    font-size:0.68rem;
+    color:var(--ink-soft);
+    margin-top:6px;
+  }
+  .sync-dot{
+    width:7px; height:7px;
+    border-radius:50%;
+    background:var(--credit);
+  }
+  .sync-dot.offline{ background:var(--debit); }
+
   footer{
     text-align:center;
     margin-top:30px;
@@ -367,7 +382,7 @@
   </header>
 
   <div id="storageWarning" class="storage-warning">
-    Não foi possível salvar os dados neste navegador (armazenamento local indisponível ou cheio). As alterações podem ser perdidas ao recarregar a página.
+    Não foi possível sincronizar com o banco compartilhado agora. Mostrando a última cópia salva neste navegador — os dados podem estar desatualizados até a conexão voltar.
   </div>
 
   <div id="saldoBox" class="saldo-card">
@@ -452,16 +467,30 @@
   </section>
 
   <footer>
-    Os dados ficam salvos neste dispositivo/navegador. Edite livremente conforme as trocas forem acontecendo.
+    Os dados ficam salvos num banco compartilhado (Supabase) — Huana e Juliana veem o mesmo histórico em qualquer dispositivo.
+    <div class="sync-badge"><span class="sync-dot" id="syncDot"></span><span id="syncLabel">sincronizando…</span></div>
     <br><button class="reset-btn" onclick="resetarDados()">Zerar todos os dados</button>
   </footer>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
+const SUPABASE_URL = 'https://kggmthuuezszymlntwbc.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtnZ210aHV1ZXpzenltbG50d2JjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc0NTAxNzUsImV4cCI6MjEwMzAyNjE3NX0.8pf_iJvjhvvJ_uIySUpBh0xnd_ItAiBatwAeq27Y5yM';
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 let entries = [];
 let quemSel = 'huana';
-const STORAGE_KEY = 'permuta-entries';
+const STORAGE_KEY = 'permuta-entries-cache';
 let quemSaldoSel = 'huana';
+
+function setSyncStatus(online){
+  const dot = document.getElementById('syncDot');
+  const label = document.getElementById('syncLabel');
+  if(!dot || !label) return;
+  dot.classList.toggle('offline', !online);
+  label.textContent = online ? 'sincronizado com o banco compartilhado' : 'offline — usando cópia local';
+}
 
 function abrirEdicaoSaldo(){
   document.getElementById('editSaldoCard').classList.add('open');
@@ -481,7 +510,7 @@ function setQuemSaldo(v){
   document.getElementById('eqj').className = 'quem-opt' + (v==='juliana' ? ' sel-juliana' : '');
 }
 
-function salvarAjusteSaldo(){
+async function salvarAjusteSaldo(){
   const novoValorAbs = parseFloat(document.getElementById('novoSaldoValor').value);
   const obs = document.getElementById('obsSaldo').value.trim();
 
@@ -502,18 +531,20 @@ function salvarAjusteSaldo(){
 
   // Um ajuste positivo (diferenca>0) aumenta o quanto Huana deve -> registrado como 'servico' de huana
   // Um ajuste negativo diminui o quanto Huana deve -> registrado como 'servico' de juliana
-  entries.push({
+  const entry = {
     id: Date.now(),
     tipo: 'servico',
     quem: diferenca > 0 ? 'huana' : 'juliana',
     data: new Date().toISOString().slice(0,10),
     valor: Math.abs(diferenca),
     desc: 'Ajuste manual de saldo' + (obs ? ' — ' + obs : '')
-  });
+  };
+  entries.push(entry);
+  render();
 
   document.getElementById('obsSaldo').value = '';
   fecharEdicaoSaldo();
-  saveEntries();
+  await persistirNovoLancamento(entry);
   render();
 }
 
@@ -554,34 +585,107 @@ const SEED_ENTRIES = [
 
 function mostrarAvisoStorage(mostrar){
   document.getElementById('storageWarning').classList.toggle('show', mostrar);
+  setSyncStatus(!mostrar);
 }
 
-function loadEntries(){
+function cacheLocal(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  }catch(e){
+    console.error('Erro ao gravar cópia local', e);
+  }
+}
+
+function lerCacheLocal(){
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
-    if(raw){
-      entries = JSON.parse(raw);
+    return raw ? JSON.parse(raw) : [];
+  }catch(e){
+    console.error('Erro ao ler cópia local', e);
+    return [];
+  }
+}
+
+function linhaParaEntry(row){
+  return {
+    id: row.id,
+    tipo: row.tipo,
+    quem: row.quem,
+    data: row.data,
+    valor: Number(row.valor),
+    desc: row.desc
+  };
+}
+
+async function loadEntries(){
+  try{
+    const { data, error } = await supabaseClient
+      .from('permuta_entries')
+      .select('*')
+      .order('data', { ascending: true });
+
+    if(error) throw error;
+
+    if(data && data.length > 0){
+      entries = data.map(linhaParaEntry);
     } else {
       // primeira vez abrindo: já entra com o saldo de R$ 125,70 em aberto (18/06)
       entries = SEED_ENTRIES;
-      saveEntries();
+      const { error: insertError } = await supabaseClient.from('permuta_entries').insert(SEED_ENTRIES);
+      if(insertError) throw insertError;
     }
+    cacheLocal();
+    mostrarAvisoStorage(false);
   }catch(e){
-    console.error('Erro ao carregar dados salvos', e);
-    entries = SEED_ENTRIES;
+    console.error('Erro ao carregar dados do banco compartilhado', e);
+    entries = lerCacheLocal();
+    if(entries.length === 0) entries = SEED_ENTRIES;
     mostrarAvisoStorage(true);
   }
   render();
 }
 
-function saveEntries(){
+async function persistirNovoLancamento(entry){
   try{
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+    const { error } = await supabaseClient.from('permuta_entries').insert(entry);
+    if(error) throw error;
+    cacheLocal();
+    mostrarAvisoStorage(false);
+    return true;
+  }catch(e){
+    console.error('Erro ao salvar no banco compartilhado', e);
+    entries = entries.filter(x => x.id !== entry.id);
+    mostrarAvisoStorage(true);
+    alert('Não foi possível salvar no banco compartilhado agora. Verifique sua conexão e tente novamente.');
+    return false;
+  }
+}
+
+async function persistirRemocao(id){
+  try{
+    const { error } = await supabaseClient.from('permuta_entries').delete().eq('id', id);
+    if(error) throw error;
+    cacheLocal();
     mostrarAvisoStorage(false);
   }catch(e){
-    console.error('Erro ao salvar dados', e);
+    console.error('Erro ao remover no banco compartilhado', e);
     mostrarAvisoStorage(true);
-    alert('Não foi possível salvar os dados neste navegador (pode ser modo privado ou armazenamento cheio). Suas alterações estão visíveis nesta sessão, mas podem se perder ao recarregar a página.');
+    alert('Não foi possível remover no banco compartilhado agora. Verifique sua conexão e tente novamente.');
+  }
+}
+
+async function persistirZerarDados(){
+  try{
+    const { error } = await supabaseClient.from('permuta_entries').delete().gt('id', 0);
+    if(error) throw error;
+    cacheLocal();
+    mostrarAvisoStorage(false);
+    return true;
+  }catch(e){
+    console.error('Erro ao zerar dados no banco compartilhado', e);
+    mostrarAvisoStorage(true);
+    alert('Não foi possível zerar os dados no banco compartilhado agora. Verifique sua conexão e tente novamente.');
+    return false;
   }
 }
 
@@ -594,7 +698,7 @@ function fmtDate(d){
   return `${day}/${m}/${y}`;
 }
 
-function addServico(){
+async function addServico(){
   const data = document.getElementById('dataServico').value;
   const valor = parseFloat(document.getElementById('valorServico').value);
   const desc = document.getElementById('descServico').value.trim();
@@ -604,23 +708,27 @@ function addServico(){
     return;
   }
 
-  entries.push({
+  const entry = {
     id: Date.now(),
     tipo: 'servico',
     quem: quemSel,
     data: data || new Date().toISOString().slice(0,10),
     valor: valor,
     desc: desc
-  });
-
-  document.getElementById('valorServico').value='';
-  document.getElementById('descServico').value='';
-  saveEntries();
+  };
+  entries.push(entry);
   render();
-  alert('Trabalho adicionado!');
+
+  const ok = await persistirNovoLancamento(entry);
+  render();
+  if(ok){
+    document.getElementById('valorServico').value='';
+    document.getElementById('descServico').value='';
+    alert('Trabalho adicionado!');
+  }
 }
 
-function addPagamento(){
+async function addPagamento(){
   const data = document.getElementById('dataPag').value;
   const valor = parseFloat(document.getElementById('valorPag').value);
   const quem = document.getElementById('quemPagou').value;
@@ -630,34 +738,40 @@ function addPagamento(){
     return;
   }
 
-  entries.push({
+  const entry = {
     id: Date.now(),
     tipo: 'pagamento',
     quem: quem,
     data: data || new Date().toISOString().slice(0,10),
     valor: valor,
     desc: quem === 'huana' ? 'Pagamento de Huana para Juliana' : 'Pagamento de Juliana para Huana'
-  });
-
-  document.getElementById('valorPag').value='';
-  saveEntries();
+  };
+  entries.push(entry);
   render();
-  alert('Pagamento registrado!');
+
+  const ok = await persistirNovoLancamento(entry);
+  render();
+  if(ok){
+    document.getElementById('valorPag').value='';
+    alert('Pagamento registrado!');
+  }
 }
 
-function resetarDados(){
+async function resetarDados(){
   if(!confirm('Isso vai apagar TODO o histórico de trabalhos e pagamentos. Tem certeza?')) return;
-  entries = [];
-  saveEntries();
-  render();
-  alert('Dados zerados. Use "Editar saldo" para definir o saldo correto atual.');
+  const ok = await persistirZerarDados();
+  if(ok){
+    entries = [];
+    render();
+    alert('Dados zerados. Use "Editar saldo" para definir o saldo correto atual.');
+  }
 }
 
-function removeEntry(id){
+async function removeEntry(id){
   if(!confirm('Remover este lançamento?')) return;
   entries = entries.filter(e=>e.id !== id);
-  saveEntries();
   render();
+  await persistirRemocao(id);
 }
 
 function calcularSaldo(){
